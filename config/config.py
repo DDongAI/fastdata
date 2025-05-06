@@ -1,6 +1,5 @@
-from pydantic_settings import BaseSettings
-from typing import List, Set
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -52,7 +51,7 @@ class Settings:
 
     # 文件上传配置
     UPLOAD_DIR: str = "uploads"
-    MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
+    MAX_FILE_SIZE: int = 5 * 1024 * 1024  # 5MB
     # 允许的图片类型
     ALLOWED_IMAGE_TYPES = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
     # 允许的文件扩展名

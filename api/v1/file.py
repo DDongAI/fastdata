@@ -8,6 +8,7 @@ from schemas.util import ResponseModel
 
 router = APIRouter()
 
+
 @router.post("/upload", response_model=ResponseModel)
 async def upload_file(file: UploadFile = File(...)):
     try:
