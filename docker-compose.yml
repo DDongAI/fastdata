@@ -1,0 +1,12 @@
+services:
+  app:   # 服务名称
+    env_file: .env   # 加载环境变量文件
+    build: .        # 使用当前目录下的 Dockerfile 构建镜像
+    ports:
+      - "50003:8000"  # 端口映射（主机端口:容器端口）
+    restart: unless-stopped  # 重启策略 no：不自动重启（默认） always：总是重启  on-failure：非正常退出时重启
+    volumes:
+      - .:/fast/data   # 数据卷挂载（主机路径:容器路径)
+    environment:     # 容器内环境变量
+      - STREAMLIT_SERVER_PORT=8000
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
