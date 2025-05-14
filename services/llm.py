@@ -16,17 +16,13 @@ class ChatService:
         self.api_base = settings.VLLM_API_BASE
         self.model = settings.VLLM_MODEL
 
-    async def chat(
-            self,
-            question: str,
-            context: str,
-    ) -> str:
+    async def chat(self, question: str, context: str) -> str:
         """
         对话
         """
         try:
             messages = [
-                {"role": "system", "content": self.system_prompt},
+                {"role": "system", "content": "你是一个很有用的助手，根据上下文回答用户的问题"},
                 {"role": "user", "content": f"上下文信息：\n{context}\n\n用户问题：{question}"}
             ]
 
@@ -38,17 +34,14 @@ class ChatService:
                 model=self.model,
                 messages=messages,
                 temperature=0.7,
-                max_tokens=1000
+                max_tokens=2000,
+                timeout=100
             )
-
             return response.choices[0].message.content
         except Exception as e:
             raise Exception(f"生成回复失败: {str(e)}")
 
-    async def generate_response(
-            self,
-            image_contents: bytes,
-    ) -> str:
+    async def generate_response(self, image_contents: bytes) -> str:
         """
         openai大模型图像识别
         """
@@ -87,8 +80,9 @@ class ChatService:
             response = await client.chat.completions.create(
                 model=self.model,
                 messages=messages,
-                temperature=0.7,
-                max_tokens=1000
+                temperature=0.4,
+                max_tokens=2000,
+                timeout=100
             )
 
             return response.choices[0].message.content
@@ -97,5 +91,3 @@ class ChatService:
 
 
 chat_service = ChatService()
-
-# result = asyncio.run(chat_service.generate_response("你好", "这是一个上下文", 1))

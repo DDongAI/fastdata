@@ -1,38 +1,68 @@
+import io
+import os
+import re
+
+import fitz
+from PIL import Image
 from fastapi import APIRouter
 from fastapi import UploadFile, File, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from config.config import settings
-from core.file import verify_file_type, read_text_file
+from core.file import pdf_ocr_service
+from core.tools import verify_file_type, read_text_file, process_str
 from schemas.util import ResponseModel
+from services.llm import chat_service
 
 router = APIRouter()
 
 
 @router.post("/upload", response_model=ResponseModel)
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), user_id: str = ""):
+    """
+    上传文件
+    :param file:
+    :param user_id:
+    :return:
+    """
+    if not file:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "code": 400,
+                "message": "文件错误",
+                "data": " "
+            }
+        )
+    if not user_id or user_id == "" or user_id is None or user_id == " ":
+        return JSONResponse(
+            status_code=400,
+            content={
+                "code": 400,
+                "message": "用户ID错误",
+                "data": " "
+            }
+        )
+    # 验证文件类型
     try:
-        # 验证文件类型
-        mime_type = verify_file_type(file.filename, settings.PDF)
-
-        # 如果是文本文件，读取内容
-        if mime_type == "text/plain":
-            content = read_text_file(file)
-        else:
-            content = "非文本文件内容未读取"
-
-        # 这里可以添加保存文件的逻辑
-        # 例如:
-        # contents = await file.read()
-        # with open(f"uploads/{file.filename}", "wb") as f:
-        #     f.write(contents)
-
+        type = verify_file_type(file.filename, settings.PDF)
+    except Exception as e:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "code": 400,
+                "message": f"文件类型错误，支持格式：{settings.PDF}",
+                "data": None
+            }
+        )
+    try:
+        result, mime_type = await pdf_ocr_service(file, user_id)
         return JSONResponse(
             status_code=200,
             content={
                 "code": 200,
-                "message": f"文件上传成功，类型: {mime_type}",
-                "data": content if mime_type == "text/plain" else f"文件名称: {file.filename}"
+                "message": f"success，文件类型: {mime_type}",
+                "data": f"```markdown\n{result}\n```"
             }
         )
     except HTTPException as e:
@@ -41,7 +71,46 @@ async def upload_file(file: UploadFile = File(...)):
             content={
                 "code": e.status_code,
                 "message": e.detail,
-                "data": None
+                "data": " "
+            }
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "code": 500,
+                "message": f"服务器内部错误: {str(e)}",
+                "data": " "
+            }
+        )
+
+
+@router.post("/download")
+async def download(pdf_str: str = ""):
+    """
+    下载文件
+    :param pdf_str:
+    :return:
+    """
+    if not pdf_str or pdf_str == " " or pdf_str == "" or pdf_str is None:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "code": 400,
+                "message": "文件错误",
+                "data": " "
+            }
+        )
+    try:
+        file_stream = io.BytesIO(pdf_str.encode("utf-8"))
+        normalized_content = await process_str(pdf_str)
+        return StreamingResponse(
+            normalized_content,
+            media_type="text/markdown; charset=utf-8",
+            # media_type="application/octet-stream",
+            headers={
+                "Content-Disposition": "attachment; filename=example.md",
+                "Content-Type": "text/markdown; charset=utf-8"
             }
         )
     except Exception as e:

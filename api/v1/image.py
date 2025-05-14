@@ -1,12 +1,15 @@
 import io
+import os
+import re
 
 from PIL import Image
 from fastapi import APIRouter
 from fastapi import UploadFile, File, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from config.config import settings
-from core.file import verify_file_type
+from core.tools import verify_file_type, read_text_file, process_str
+from core.image import image_ocr_service
 from schemas.util import ResponseModel
 from services.llm import chat_service
 
@@ -20,8 +23,15 @@ async def upload_image(image: UploadFile = File(...)):
     :param image:
     :return:
     """
-    # 验证图片类型
-    mime_type = verify_file_type(image.filename, settings.ALLOWED_IMAGE_TYPES)
+    if not image:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "code": 400,
+                "message": "文件错误",
+                "data": ""
+            }
+        )
     # 验证图片大小
     if image.size > settings.MAX_FILE_SIZE:
         return JSONResponse(
@@ -32,21 +42,8 @@ async def upload_image(image: UploadFile = File(...)):
                 "data": None
             }
         )
-    # 读取图片内容
-    image_contents = await image.read()
-    # 并验证是否为有效图片
     try:
-        img = Image.open(io.BytesIO(image_contents))
-        img.verify()  # 验证图片完整性
-    except Exception as e:
-        raise HTTPException(
-            status_code=400,
-            detail=f"无效的图片文件: {str(e)}"
-        )
-    try:
-        # print(image_contents)
-        # 识别图片
-        result = await chat_service.generate_response(image_contents)
+        result = await image_ocr_service(image)
         return JSONResponse(
             status_code=200,
             content={
@@ -73,3 +70,52 @@ async def upload_image(image: UploadFile = File(...)):
                 "data": None
             }
         )
+
+
+@router.post("/download")
+async def download(image_str: str = ""):
+    """
+    下载文件
+    :param image_str:
+    :return:
+    """
+    if not image_str or image_str == " " or image_str == "" or image_str is None:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "code": 400,
+                "message": "文件错误",
+                "data": None
+            }
+        )
+
+
+    try:
+        file_stream = io.BytesIO(image_str.encode("utf-8"))  # \\r\\n
+        # file_stream = io.StringIO(image_str)
+        # str1 = f"""# 第一行{os.linesep}# 第二行{os.linesep}# 第三行"""
+        # print(image_str)
+        normalized_content = await process_str(image_str)
+        # print(file_stream.getvalue())
+        # print(normalized_content)
+        # with open('uploads/example.md', 'w', encoding='utf-8') as f:
+        #     f.write(normalized_content)
+        return StreamingResponse(
+            content=normalized_content,
+            media_type="text/markdown; charset=utf-8",
+            # media_type="application/octet-stream",
+            headers={
+                "Content-Disposition": "attachment; filename=file.md",
+                "Content-Type": "text/markdown; charset=utf-8"
+            }
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "code": 500,
+                "message": f"服务器内部错误: {str(e)}",
+                "data": None
+            }
+        )
+
