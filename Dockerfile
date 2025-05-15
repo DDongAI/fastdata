@@ -9,7 +9,7 @@ WORKDIR /fast
 
 # 复制依赖文件并安装
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt # 权限问题 --user
 
 # 复制项目文件到配置的WORKDIR下
 COPY . .
