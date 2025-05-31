@@ -3,7 +3,7 @@ import os
 import re
 
 from PIL import Image
-from fastapi import APIRouter
+from fastapi import APIRouter, Form
 from fastapi import UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
@@ -19,9 +19,9 @@ router = APIRouter()
 @router.post("/upload", response_model=ResponseModel)
 async def upload_image(image: UploadFile = File(...)):
     """
-    上传图片
-    :param image:
-    :return:
+    上传图片 \n
+    :param image:图片大小不要超过5M，格式可以是['.jpg', '.jpeg', '.png', '.gif', '.webp'] \n
+    :return:返回识别的文本内容，格式为markdown \n
     """
     if not image:
         return JSONResponse(
@@ -73,11 +73,11 @@ async def upload_image(image: UploadFile = File(...)):
 
 
 @router.post("/download")
-async def download(image_str: str = ""):
+async def download(image_str: str = Form(...)):
     """
-    下载文件
-    :param image_str:
-    :return:
+    下载文件 \n
+    :param image_str:将识别的结果直接传过来，后台封装成.md文件 \n
+    :return:字符串封装成.md文件 \n
     """
     if not image_str or image_str == " " or image_str == "" or image_str is None:
         return JSONResponse(
@@ -88,7 +88,6 @@ async def download(image_str: str = ""):
                 "data": None
             }
         )
-
 
     try:
         file_stream = io.BytesIO(image_str.encode("utf-8"))  # \\r\\n

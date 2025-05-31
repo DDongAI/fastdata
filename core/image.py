@@ -5,7 +5,7 @@ from fastapi import UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 
 from config.config import settings
-from core.tools import verify_file_type
+from core.tools import verify_file_type, image_resize_cv
 from services.llm import chat_service
 
 
@@ -27,7 +27,8 @@ async def image_ocr_service(image: UploadFile = File(...)):
     try:
         # print(image_contents)
         # 识别图片
-        result = await chat_service.generate_response(image_contents)
+        bytes_data = await image_resize_cv(image_contents)
+        result = await chat_service.generate_response(bytes_data)
         return result
     except HTTPException as e:
         raise HTTPException(

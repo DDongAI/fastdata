@@ -7,3 +7,4 @@ pillow==11.1.0
 python-dotenv==1.0.1
 aiofiles==24.1.0
 python-multipart==0.0.20
+marker-pdf[full]==1.6.2

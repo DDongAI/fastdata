@@ -2,6 +2,7 @@
 FROM python:3.12-slim
 
 # 镜像维护者
+# author: zkyuan
 MAINTAINER user 2584278161@qq.com
 
 # 设置docker工作目录

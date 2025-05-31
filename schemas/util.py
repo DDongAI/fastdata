@@ -19,3 +19,11 @@ class ImageSize(BaseModel):
     memory: int = 0
     pixel: int = 0
     size: int = 0
+
+
+class ChatModel(BaseModel):
+    """
+    模型对话
+    """
+    question: str = None
+    context: str = None

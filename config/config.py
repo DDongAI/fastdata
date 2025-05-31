@@ -46,8 +46,22 @@ def my_prompt_vl_customize(prompt: str) -> str:
 class Settings:
     # 项目基本信息
     PROJECT_NAME: str = os.getenv("PROJECT_NAME", "数据清洗api")
-    VERSION: str = os.getenv("VERSION", "v1.0")
-    API_V1_STR: str = "/api/v1"
+    VERSION: str = os.getenv("VERSION", "v2.0")
+    API_V1_STR: str = "/api/v2"
+
+    ALLOWED_ORIGINS: list = [
+        "127.0.0.1",
+        "192.168.0.100",
+        "14.145.46.218",
+        "192.168.141.125",
+        "157.48.20.68",
+        "157.48.20.69",
+        "192.168.10.122",
+        "192.168.10.126",
+        "157.148.20.68",
+        "157.148.20.69",
+        "157.148.21.116"
+    ]
 
     # 文件上传配置
     UPLOAD_DIR: str = "uploads"

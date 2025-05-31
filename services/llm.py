@@ -4,7 +4,7 @@ import base64
 from openai import AsyncOpenAI
 
 from config.config import settings
-
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 class ChatService:
     def __init__(self):
@@ -41,6 +41,7 @@ class ChatService:
         except Exception as e:
             raise Exception(f"生成回复失败: {str(e)}")
 
+    # @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     async def generate_response(self, image_contents: bytes) -> str:
         """
         openai大模型图像识别
@@ -81,8 +82,8 @@ class ChatService:
                 model=self.model,
                 messages=messages,
                 temperature=0.4,
-                max_tokens=2000,
-                timeout=100
+                max_tokens=4096,
+                timeout=180
             )
 
             return response.choices[0].message.content
