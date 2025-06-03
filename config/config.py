@@ -49,6 +49,7 @@ class Settings:
     VERSION: str = os.getenv("VERSION", "v2.0")
     API_V1_STR: str = "/api/v2"
 
+    # 跨域配置，允许的域名或IP的来源
     ALLOWED_ORIGINS: list = [
         "127.0.0.1",
         "192.168.0.100",
