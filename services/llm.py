@@ -42,7 +42,7 @@ class ChatService:
             raise Exception(f"生成回复失败: {str(e)}")
 
     # @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
-    async def generate_response(self, image_contents: bytes) -> str:
+    async def generate_response(self, image_contents: bytes):
         """
         openai大模型图像识别
         """
@@ -86,7 +86,7 @@ class ChatService:
                 timeout=180
             )
 
-            return response.choices[0].message.content
+            return response.usage.total_tokens, response.choices[0].message.content
         except Exception as e:
             raise Exception(f"生成回复失败: {str(e)}")
 

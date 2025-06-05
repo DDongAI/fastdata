@@ -14,6 +14,7 @@ from core.file import pdf_ocr_service, get_status
 from core.marker_pdf import get_marker_pdf, get_marker_pdf_llm
 from core.tools import verify_file_type, read_text_file, process_str, delete_dir, save_file, read_md
 from schemas.util import ResponseModel
+from services.db_token import db
 from services.llm import chat_service
 
 router = APIRouter()
@@ -38,6 +39,8 @@ async def init(user_id: str = ""):
     try:
         # 清空用户缓存文件
         await delete_dir(f"{settings.UPLOAD_DIR}/{user_id}")
+        # 清空token记录
+        await db.delete_token_record(user_id)
     except Exception as e:
         return JSONResponse(
             status_code=500,
@@ -173,6 +176,47 @@ async def status(user_id: str = ""):
     )
 
 
+@router.get("/token")
+async def get_token(user_id: str = ""):
+    """
+    查询各文档消耗的token数 \n
+    :param user_id: \n
+    :return: \n
+    返回示例：\n
+        [ \n
+            {"user_id": "user1", "file_name": "example.pdf", "total_tokens": 150},\n
+            {"user_id": "user1", "file_name": "test.pdf", "total_tokens": 200}\n
+        ]
+    """
+    if not user_id or user_id == "" or user_id is None or user_id == " ":
+        return JSONResponse(
+            status_code=400,
+            content={
+                "code": 400,
+                "message": "用户ID错误",
+                "data": " "
+            }
+        )
+    try:
+        result = await db.list_user_records(user_id=user_id)
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "code": 500,
+                "message": f"服务器内部错误: {str(e)}"
+            }
+        )
+    return JSONResponse(
+        status_code=200,
+        content={
+            "code": 200,
+            "message": "success",
+            "data": result
+        }
+    )
+
+
 @router.get("/getfile")
 async def get_md(user_id: str = "", file_name: str = ""):
     """
@@ -201,12 +245,14 @@ async def get_md(user_id: str = "", file_name: str = ""):
         )
     # 读文件
     result = await read_md(file_name, user_id)
+    tokens = await db.read_token_record(user_id, file_name)
     return JSONResponse(
         status_code=200,
         content={
             "code": 200,
             "message": "success",
-            "data": result
+            "data": result,
+            "tokens": tokens
         }
     )
 
